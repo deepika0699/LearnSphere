@@ -25,6 +25,7 @@ const TopicReader = React.lazy(() => import('./pages/student/TopicReader').then(
 const Quiz = React.lazy(() => import('./pages/student/Quiz').then(m => ({ default: m.Quiz })));
 const Certificates = React.lazy(() => import('./pages/student/Certificates').then(m => ({ default: m.Certificates })));
 const Profile = React.lazy(() => import('./pages/student/Profile').then(m => ({ default: m.Profile })));
+const Notes = React.lazy(() => import('./pages/student/Notes').then(m => ({ default: m.Notes })));
 const StudentAssessmentPage = React.lazy(() => import('./pages/student/StudentAssessmentPage').then(m => ({ default: m.StudentAssessmentPage })));
 
 
@@ -101,6 +102,14 @@ export default function App() {
                 element={
                   <StudentRoute>
                     <Quiz />
+                  </StudentRoute>
+                }
+              />
+              <Route
+                path="/notes"
+                element={
+                  <StudentRoute>
+                    <Notes />
                   </StudentRoute>
                 }
               />

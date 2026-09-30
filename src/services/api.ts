@@ -2407,20 +2407,28 @@ export interface StudentCourseProgressSummary {
   enrollmentStatus?: 'active' | 'completed' | 'withdrawn';
 }
 
+export interface StudentMarkTopicCompletedResult {
+  progress: StudentTopicProgress;
+  alreadyCompleted: boolean;
+  isCourseCompleted: boolean;
+  enrollmentStatus: 'active' | 'completed' | 'withdrawn';
+}
+
 export const studentProgressApi = {
   /**
    * PUT /api/student/progress/:courseId/:topicId
    * Marks topic as completed for authenticated student.
+   * Returns authoritative progress record, course completion state, and enrollment status.
    */
   async markTopicCompleted(
     courseId: string,
     topicId: string,
     accessToken?: string | null
-  ): Promise<{ progress: StudentTopicProgress; alreadyCompleted: boolean }> {
+  ): Promise<StudentMarkTopicCompletedResult> {
     const res = await apiRequest<{
       status: string;
       message: string;
-      data: { progress: StudentTopicProgress; alreadyCompleted: boolean };
+      data: StudentMarkTopicCompletedResult;
     }>(
       `/api/student/progress/${encodeURIComponent(courseId)}/${encodeURIComponent(topicId)}`,
       {
@@ -2816,4 +2824,198 @@ export const studentAssessmentApi = {
     return res.data;
   },
 };
+
+// ============================================================================
+// Student Personalized Notes APIs & Interfaces (/api/student/notes)
+// ============================================================================
+
+export type StudentNoteType = 'standalone' | 'highlight';
+export type StudentNoteColor = 'default' | 'amber' | 'emerald' | 'sky' | 'indigo' | 'rose' | 'purple';
+
+export interface StudentNote {
+  id: string;
+  userId?: string;
+  noteType: StudentNoteType;
+  title: string;
+  content: string;
+  selectedText: string;
+  courseId: string | null;
+  moduleId: string | null;
+  topicId: string | null;
+  courseTitle: string;
+  moduleTitle: string;
+  topicTitle: string;
+  tags: string[];
+  color: StudentNoteColor;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentNotesPagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface StudentNotesListResponse {
+  notes: StudentNote[];
+  pagination: StudentNotesPagination;
+}
+
+export interface StudentNotesStats {
+  totalNotes: number;
+  standaloneNotes: number;
+  highlightNotes: number;
+  coursesWithNotesCount: number;
+}
+
+export interface CreateStudentNotePayload {
+  noteType?: StudentNoteType;
+  title?: string;
+  content?: string;
+  selectedText?: string;
+  courseId?: string | null;
+  moduleId?: string | null;
+  topicId?: string | null;
+  tags?: string[];
+  color?: StudentNoteColor;
+}
+
+export interface UpdateStudentNotePayload {
+  title?: string;
+  content?: string;
+  tags?: string[];
+  color?: StudentNoteColor;
+}
+
+export interface GetStudentNotesParams {
+  courseId?: string;
+  topicId?: string;
+  noteType?: StudentNoteType;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sort?: 'newest' | 'oldest' | 'updated' | 'title_asc' | 'title_desc';
+}
+
+export const studentNoteApi = {
+  /**
+   * POST /api/student/notes
+   * Creates a personal note (standalone or highlight-based).
+   */
+  async createNote(
+    payload: CreateStudentNotePayload,
+    accessToken?: string | null
+  ): Promise<StudentNote> {
+    const res = await apiRequest<{ status: string; data: { note: StudentNote } }>(
+      '/api/student/notes',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      accessToken
+    );
+    return res.data.note;
+  },
+
+  /**
+   * GET /api/student/notes
+   * Retrieves paginated notes with optional filters.
+   */
+  async getNotes(
+    params?: GetStudentNotesParams,
+    accessToken?: string | null
+  ): Promise<StudentNotesListResponse> {
+    const query = new URLSearchParams();
+    if (params?.courseId) query.set('courseId', params.courseId);
+    if (params?.topicId) query.set('topicId', params.topicId);
+    if (params?.noteType) query.set('noteType', params.noteType);
+    if (params?.search) query.set('search', params.search);
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.limit) query.set('limit', params.limit.toString());
+    if (params?.sort) query.set('sort', params.sort);
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/api/student/notes?${queryString}` : '/api/student/notes';
+
+    const res = await apiRequest<{ status: string; data: StudentNotesListResponse }>(
+      endpoint,
+      {
+        method: 'GET',
+      },
+      accessToken
+    );
+    return res.data;
+  },
+
+  /**
+   * GET /api/student/notes/stats
+   * Retrieves summary counts of notes for the student.
+   */
+  async getNotesStats(accessToken?: string | null): Promise<StudentNotesStats> {
+    const res = await apiRequest<{ status: string; data: { stats: StudentNotesStats } }>(
+      '/api/student/notes/stats',
+      {
+        method: 'GET',
+      },
+      accessToken
+    );
+    return res.data.stats;
+  },
+
+  /**
+   * GET /api/student/notes/:id
+   * Retrieves a single note by ID.
+   */
+  async getNoteById(noteId: string, accessToken?: string | null): Promise<StudentNote> {
+    const res = await apiRequest<{ status: string; data: { note: StudentNote } }>(
+      `/api/student/notes/${encodeURIComponent(noteId)}`,
+      {
+        method: 'GET',
+      },
+      accessToken
+    );
+    return res.data.note;
+  },
+
+  /**
+   * PUT /api/student/notes/:id
+   * Updates note title, commentary, tags, or color.
+   */
+  async updateNote(
+    noteId: string,
+    payload: UpdateStudentNotePayload,
+    accessToken?: string | null
+  ): Promise<StudentNote> {
+    const res = await apiRequest<{ status: string; data: { note: StudentNote } }>(
+      `/api/student/notes/${encodeURIComponent(noteId)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
+      accessToken
+    );
+    return res.data.note;
+  },
+
+  /**
+   * DELETE /api/student/notes/:id
+   * Deletes a student note.
+   */
+  async deleteNote(
+    noteId: string,
+    accessToken?: string | null
+  ): Promise<{ success: boolean; deletedId: string }> {
+    const res = await apiRequest<{ status: string; data: { success: boolean; deletedId: string } }>(
+      `/api/student/notes/${encodeURIComponent(noteId)}`,
+      {
+        method: 'DELETE',
+      },
+      accessToken
+    );
+    return res.data;
+  },
+};
+
 

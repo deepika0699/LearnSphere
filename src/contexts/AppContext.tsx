@@ -5,7 +5,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, UserState, Certificate } from '../types';
-import { MOCK_COURSES } from '../constants/data';
 import { authApi } from '../services/api';
 
 export interface AuthResult {
@@ -75,8 +74,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             avatar: `https://images.unsplash.com/photo-1535713875002?auto=format&fit=crop&w=150&h=150&q=80`,
             enrolledCourses: [],
             completedCourses: [],
-            xp: 0,
-            streak: 1,
           };
           setState((prev) => ({
             ...prev,
@@ -132,8 +129,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         avatar: `https://images.unsplash.com/photo-1535713875002?auto=format&fit=crop&w=150&h=150&q=80`,
         enrolledCourses: [],
         completedCourses: [],
-        xp: 0,
-        streak: 1,
       };
 
       setState((prev) => ({
@@ -203,8 +198,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         avatar: `https://images.unsplash.com/photo-1535713875002?auto=format&fit=crop&w=150&h=150&q=80`,
         enrolledCourses: state.user?.enrolledCourses || [],
         completedCourses: state.user?.completedCourses || [],
-        xp: state.user?.xp || 0,
-        streak: state.user?.streak || 1,
       };
       setState((prev) => ({
         ...prev,
@@ -221,135 +214,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [state.user]);
 
-  const enrollInCourse = (courseId: string) => {
-    if (!state.user) return;
-    if (state.user.enrolledCourses.includes(courseId)) return;
-
-    setState((prev) => {
-      if (!prev.user) return prev;
-      return {
-        ...prev,
-        user: {
-          ...prev.user,
-          enrolledCourses: [...prev.user.enrolledCourses, courseId],
-          xp: prev.user.xp + 50, // 50 XP for enrolling!
-        },
-        courseProgress: {
-          ...prev.courseProgress,
-          [courseId]: {
-            completedLessons: [],
-          },
-        },
-      };
-    });
+  // Safely deprecated legacy mutators: all student enrollment, topic progress, and assessments
+  // are server-authoritative via studentEnrollmentApi, studentProgressApi, and studentAssessmentApi.
+  const enrollInCourse = (_courseId: string) => {
+    // Deprecated: Real enrollments are handled server-side via studentEnrollmentApi.enrollInCourse
   };
 
-  const completeLesson = (courseId: string, lessonId: string) => {
-    if (!state.user) return;
-
-    setState((prev) => {
-      const currentProgress = prev.courseProgress[courseId] || { completedLessons: [] };
-      if (currentProgress.completedLessons.includes(lessonId)) return prev;
-
-      const updatedLessons = [...currentProgress.completedLessons, lessonId];
-      const isAlreadyPassed = currentProgress.quizPassed || false;
-
-      // Find the course to check if all lessons (excluding the final quiz itself) are complete
-      const course = MOCK_COURSES.find((c) => c.id === courseId);
-      const totalNonQuizLessonsCount = course
-        ? course.syllabus.filter((item) => item.type !== 'quiz').length
-        : 0;
-
-      const completedNonQuizCount = course
-        ? course.syllabus.filter((item) => item.type !== 'quiz' && updatedLessons.includes(item.id)).length
-        : 0;
-
-      const xpGained = 20; // 20 XP per lesson
-
-      return {
-        ...prev,
-        user: prev.user
-          ? {
-              ...prev.user,
-              xp: prev.user.xp + xpGained,
-            }
-          : null,
-        courseProgress: {
-          ...prev.courseProgress,
-          [courseId]: {
-            ...currentProgress,
-            completedLessons: updatedLessons,
-          },
-        },
-      };
-    });
+  const completeLesson = (_courseId: string, _lessonId: string) => {
+    // Deprecated: Real topic progress is handled server-side via studentProgressApi.markTopicCompleted
   };
 
-  const completeQuiz = (courseId: string, score: number, passed: boolean) => {
-    if (!state.user) return;
-
-    setState((prev) => {
-      if (!prev.user) return prev;
-      const currentProgress = prev.courseProgress[courseId] || { completedLessons: [] };
-      const previouslyPassed = currentProgress.quizPassed;
-
-      // Add lesson completion for the quiz item itself if passed
-      const course = MOCK_COURSES.find((c) => c.id === courseId);
-      const quizSyllabusItem = course?.syllabus.find((item) => item.type === 'quiz');
-      let completedLessons = currentProgress.completedLessons;
-      if (passed && quizSyllabusItem && !completedLessons.includes(quizSyllabusItem.id)) {
-        completedLessons = [...completedLessons, quizSyllabusItem.id];
-      }
-
-      const xpGained = passed && !previouslyPassed ? 100 : 25; // 100 XP for passing, 25 for attempt
-
-      let updatedCompletedCourses = prev.user.completedCourses;
-      if (passed && !prev.user.completedCourses.includes(courseId)) {
-        updatedCompletedCourses = [...prev.user.completedCourses, courseId];
-      }
-
-      return {
-        ...prev,
-        user: {
-          ...prev.user,
-          completedCourses: updatedCompletedCourses,
-          xp: prev.user.xp + xpGained,
-        },
-        courseProgress: {
-          ...prev.courseProgress,
-          [courseId]: {
-            ...currentProgress,
-            completedLessons,
-            quizScore: score,
-            quizPassed: passed,
-          },
-        },
-      };
-    });
+  const completeQuiz = (_courseId: string, _score: number, _passed: boolean) => {
+    // Deprecated: Real assessments are evaluated server-side via studentAssessmentApi.submitAttempt
   };
 
-  const addCertificate = (courseId: string, courseTitle: string) => {
-    if (!state.user) return;
-    const exists = state.certificates.some((c) => c.courseId === courseId);
-    if (exists) return;
-
-    const cert: Certificate = {
-      id: `cert-${Date.now()}`,
-      courseId,
-      courseTitle,
-      studentName: state.user.name,
-      issueDate: new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      credentialId: `LS-${Math.floor(100000 + Math.random() * 900000)}`,
-    };
-
-    setState((prev) => ({
-      ...prev,
-      certificates: [...prev.certificates, cert],
-    }));
+  const addCertificate = (_courseId: string, _courseTitle: string) => {
+    // Deprecated: Academic credentials/certificates are deferred to Phase 11
   };
 
   const updateProfile = (name: string, title: string, bio: string) => {

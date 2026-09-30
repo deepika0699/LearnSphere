@@ -60,6 +60,7 @@ export const CourseDetails: React.FC = () => {
   // Student Enrollment & Progress State
   const [enrollment, setEnrollment] = useState<StudentEnrollment | null>(null);
   const [progressSummary, setProgressSummary] = useState<StudentCourseProgressSummary | null>(null);
+  const [completedTopicIds, setCompletedTopicIds] = useState<Set<string>>(new Set());
   const [assessments, setAssessments] = useState<StudentAssessmentProgressItem[]>([]);
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState<boolean>(false);
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
@@ -154,13 +155,15 @@ export const CourseDetails: React.FC = () => {
 
         if (enrollData && (enrollData.status === 'active' || enrollData.status === 'completed')) {
           try {
-            const [summary, assessData] = await Promise.all([
+            const [summary, assessData, progressData] = await Promise.all([
               studentProgressApi.getCourseProgressSummary(courseId, accessToken),
               studentAssessmentApi.getCourseAssessments(courseId, accessToken),
+              studentProgressApi.getCourseProgress(courseId, accessToken),
             ]);
             if (isSubscribed) {
               setProgressSummary(summary);
               setAssessments(assessData || []);
+              setCompletedTopicIds(new Set(progressData.completedTopicIds || []));
             }
           } catch {
             // Non-blocking progress summary error
@@ -168,6 +171,7 @@ export const CourseDetails: React.FC = () => {
         } else {
           setProgressSummary(null);
           setAssessments([]);
+          setCompletedTopicIds(new Set());
         }
       } catch {
         // Non-blocking enrollment check
@@ -209,8 +213,12 @@ export const CourseDetails: React.FC = () => {
       setEnrollSuccessMessage('Successfully enrolled in course! You can now start learning.');
 
       try {
-        const summary = await studentProgressApi.getCourseProgressSummary(courseId, accessToken);
+        const [summary, progressData] = await Promise.all([
+          studentProgressApi.getCourseProgressSummary(courseId, accessToken),
+          studentProgressApi.getCourseProgress(courseId, accessToken),
+        ]);
         setProgressSummary(summary);
+        setCompletedTopicIds(new Set(progressData.completedTopicIds || []));
       } catch {
         // Safe fallback
       }
@@ -585,6 +593,15 @@ export const CourseDetails: React.FC = () => {
                                       <span className="text-[10px] font-mono text-slate-400 font-bold">
                                         TOPIC {String(modIdx + 1)}.{String(topicIdx + 1)}
                                       </span>
+                                      {completedTopicIds.has(topic.id) && (
+                                        <span
+                                          className="inline-flex items-center space-x-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-sm"
+                                          id={`topic-completed-badge-${topic.id}`}
+                                        >
+                                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                          <span>Completed</span>
+                                        </span>
+                                      )}
                                     </div>
                                     <h4 className="font-display font-medium text-sm text-slate-900">
                                       {topic.title}
@@ -630,7 +647,7 @@ export const CourseDetails: React.FC = () => {
                                       id={`navigate-topic-${topic.id}`}
                                     >
                                       <PlayCircle className="w-3.5 h-3.5" />
-                                      <span>Start Topic</span>
+                                      <span>{completedTopicIds.has(topic.id) ? 'Review Topic' : 'Start Topic'}</span>
                                       <ArrowRight className="w-3 h-3 ml-0.5" />
                                     </Link>
                                   </div>
@@ -771,10 +788,20 @@ export const CourseDetails: React.FC = () => {
 
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500">Enrollment:</span>
-                {enrollment && enrollment.status === 'completed' ? (
+                {isCheckingEnrollment && isStudent ? (
+                  <span className="font-medium text-slate-400 font-mono text-[11px] inline-flex items-center space-x-1" id="enrolled-status-checking">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse" />
+                    <span>Checking...</span>
+                  </span>
+                ) : enrollment && enrollment.status === 'completed' ? (
                   <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-sm inline-flex items-center space-x-1" id="enrolled-status-badge">
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                     <span>Completed</span>
+                  </span>
+                ) : enrollment && enrollment.status === 'withdrawn' ? (
+                  <span className="font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-sm inline-flex items-center space-x-1" id="enrolled-status-badge">
+                    <AlertCircle className="w-3 h-3 text-rose-600" />
+                    <span>Withdrawn</span>
                   </span>
                 ) : enrollment && enrollment.status === 'active' ? (
                   <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-sm inline-flex items-center space-x-1" id="enrolled-status-badge">
@@ -788,6 +815,25 @@ export const CourseDetails: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Course Completed State Card (Server-Authoritative) */}
+            {enrollment && enrollment.status === 'completed' && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2.5" id="course-completed-card">
+                <div className="flex items-center space-x-2 text-emerald-900">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <h4 className="font-display font-bold text-sm">Course Completed</h4>
+                </div>
+                <p className="text-xs text-emerald-800 leading-relaxed font-sans">
+                  You have successfully fulfilled all required published topics and passed all course assessments.
+                </p>
+                {enrollment.completedAt && (
+                  <div className="text-[11px] font-mono text-emerald-700 flex items-center space-x-1 pt-0.5 border-t border-emerald-200/60">
+                    <Calendar className="w-3 h-3 text-emerald-600" />
+                    <span>Completed on {new Date(enrollment.completedAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Verified Progress Summary (If Enrolled) */}
             {enrollment && (enrollment.status === 'active' || enrollment.status === 'completed') && progressSummary && (
@@ -841,7 +887,31 @@ export const CourseDetails: React.FC = () => {
             )}
 
             {/* Context-Aware Primary Action Button */}
-            {enrollment && (enrollment.status === 'active' || enrollment.status === 'completed') ? (
+            {isCheckingEnrollment && isStudent ? (
+              <div className="w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center space-x-2 text-slate-500 text-xs font-medium" id="checking-enrollment-placeholder">
+                <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                <span>Checking enrollment status...</span>
+              </div>
+            ) : enrollment && enrollment.status === 'withdrawn' ? (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center space-y-2" id="withdrawn-enrollment-panel">
+                <div className="flex items-center justify-center space-x-1.5 text-rose-700 text-xs font-bold">
+                  <AlertCircle className="w-4 h-4 text-rose-600" />
+                  <span>Enrollment Withdrawn</span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Your enrollment in this course has been withdrawn. Topics and assessments cannot be completed while withdrawn.
+                </p>
+                {firstTopic && (
+                  <Link
+                    to={`/courses/${course.id}/learn/${firstTopic.id}`}
+                    className="inline-flex items-center justify-center space-x-1.5 text-xs text-slate-700 hover:text-slate-900 font-medium underline pt-1"
+                  >
+                    <span>Preview Topics</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+            ) : enrollment && (enrollment.status === 'active' || enrollment.status === 'completed') ? (
               firstTopic ? (
                 <Link
                   to={`/courses/${course.id}/learn/${firstTopic.id}`}

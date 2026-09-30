@@ -139,7 +139,7 @@ export const Home: React.FC = () => {
                           Progress will appear after enrolling.
                         </p>
                         <p className="text-[10px] text-slate-400 leading-normal">
-                          Enrolling in active modules enables streak tracking and XP milestones.
+                          Enrolling in active courses enables structured progress tracking and lesson completion.
                         </p>
                       </div>
                     </div>

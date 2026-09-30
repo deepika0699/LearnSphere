@@ -790,9 +790,12 @@ async function runPhase9BAudit() {
   console.log(`Phase 9B Verification Complete: ${passedTests}/${totalTests} Passed (${failedTests} Failed)`);
   console.log('===================================================================\n');
 
+  await mongoose.disconnect();
+
   if (failedTests > 0) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runPhase9BAudit().catch((err) => {

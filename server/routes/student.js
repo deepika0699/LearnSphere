@@ -24,6 +24,14 @@ import {
   getAttemptsHandler,
   getAttemptReviewHandler,
 } from '../controllers/studentAssessmentController.js';
+import {
+  createNoteHandler,
+  getNotesHandler,
+  getNotesStatsHandler,
+  getNoteByIdHandler,
+  updateNoteHandler,
+  deleteNoteHandler,
+} from '../controllers/studentNoteController.js';
 
 const router = Router();
 
@@ -185,6 +193,134 @@ router.get(
   studentAttemptReviewValidation,
   getAttemptReviewHandler
 );
+
+// ---------------------------------------------------------------------------
+// Student Personalized Notes Endpoints (/api/student/notes)
+// ---------------------------------------------------------------------------
+
+const createNoteValidation = [
+  body('noteType')
+    .optional()
+    .isIn(['standalone', 'highlight'])
+    .withMessage('noteType must be either "standalone" or "highlight"'),
+  body('title')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Title cannot exceed 200 characters'),
+  body('content')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 10000 })
+    .withMessage('Content cannot exceed 10000 characters'),
+  body('selectedText')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Selected text cannot exceed 5000 characters'),
+  body('courseId')
+    .optional({ nullable: true, checkFalsy: true })
+    .isMongoId()
+    .withMessage('Invalid course ID format'),
+  body('moduleId')
+    .optional({ nullable: true, checkFalsy: true })
+    .isMongoId()
+    .withMessage('Invalid module ID format'),
+  body('topicId')
+    .optional({ nullable: true, checkFalsy: true })
+    .isMongoId()
+    .withMessage('Invalid topic ID format'),
+  body('tags')
+    .optional()
+    .isArray()
+    .withMessage('Tags must be an array of strings'),
+  body('color')
+    .optional()
+    .isIn(['default', 'amber', 'emerald', 'sky', 'indigo', 'rose', 'purple'])
+    .withMessage('Invalid color option'),
+  validateRequest,
+];
+
+const getNotesValidation = [
+  query('courseId')
+    .optional()
+    .isMongoId()
+    .withMessage('Invalid course ID format'),
+  query('topicId')
+    .optional()
+    .isMongoId()
+    .withMessage('Invalid topic ID format'),
+  query('noteType')
+    .optional()
+    .isIn(['standalone', 'highlight'])
+    .withMessage('noteType must be either "standalone" or "highlight"'),
+  query('search')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Search keyword cannot exceed 100 characters'),
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer'),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 50 })
+    .withMessage('Limit must be an integer between 1 and 50'),
+  query('sort')
+    .optional()
+    .isIn(['newest', 'oldest', 'updated', 'title_asc', 'title_desc'])
+    .withMessage('Invalid sort parameter'),
+  validateRequest,
+];
+
+const noteIdParamValidation = [
+  param('id')
+    .trim()
+    .isMongoId()
+    .withMessage('Invalid note ID format'),
+  validateRequest,
+];
+
+const updateNoteValidation = [
+  param('id')
+    .trim()
+    .isMongoId()
+    .withMessage('Invalid note ID format'),
+  body('title')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Title cannot exceed 200 characters'),
+  body('content')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 10000 })
+    .withMessage('Content cannot exceed 10000 characters'),
+  body('tags')
+    .optional()
+    .isArray()
+    .withMessage('Tags must be an array of strings'),
+  body('color')
+    .optional()
+    .isIn(['default', 'amber', 'emerald', 'sky', 'indigo', 'rose', 'purple'])
+    .withMessage('Invalid color option'),
+  validateRequest,
+];
+
+// Mount notes endpoints
+router.post('/notes', createNoteValidation, createNoteHandler);
+router.get('/notes', getNotesValidation, getNotesHandler);
+router.get('/notes/stats', getNotesStatsHandler);
+router.get('/notes/:id', noteIdParamValidation, getNoteByIdHandler);
+router.put('/notes/:id', updateNoteValidation, updateNoteHandler);
+router.delete('/notes/:id', noteIdParamValidation, deleteNoteHandler);
 
 export default router;
 

@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../contexts/AppContext';
-import { User, Sparkles, Trophy, Flame, Save } from 'lucide-react';
+import { User, Sparkles, Save } from 'lucide-react';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 export const Profile: React.FC = () => {
@@ -81,24 +81,6 @@ export const Profile: React.FC = () => {
             <p className="text-xs text-slate-500 font-sans italic leading-relaxed">
               "{user.bio || 'Student seeking complete frontend mastery.'}"
             </p>
-
-            <div className="pt-4 border-t border-slate-100 flex justify-around text-center text-xs">
-              <div>
-                <div className="font-bold text-slate-800 flex items-center justify-center space-x-1">
-                  <Trophy className="w-3.5 h-3.5 text-primary-500" />
-                  <span>{user.xp}</span>
-                </div>
-                <span className="text-[10px] font-mono text-slate-400">TOTAL XP</span>
-              </div>
-              <div className="border-r border-slate-200" />
-              <div>
-                <div className="font-bold text-slate-800 flex items-center justify-center space-x-1">
-                  <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span>{user.streak}d</span>
-                </div>
-                <span className="text-[10px] font-mono text-slate-400">STREAK</span>
-              </div>
-            </div>
           </div>
         </div>
 

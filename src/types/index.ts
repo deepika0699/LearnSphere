@@ -16,9 +16,6 @@ export interface User {
   title?: string;
   enrolledCourses: string[]; // Course IDs
   completedCourses: string[]; // Course IDs
-  xp: number;
-  streak: number;
-  lastActiveDate?: string;
   createdAt?: string;
 }
 
@@ -124,5 +121,15 @@ export type {
   StudentSubmitAttemptResponse,
   StudentAssessmentAttemptsResponse,
   StudentAttemptReviewResponse,
+  StudentMarkTopicCompletedResult,
+  StudentNote,
+  StudentNoteType,
+  StudentNoteColor,
+  StudentNotesPagination,
+  StudentNotesListResponse,
+  StudentNotesStats,
+  CreateStudentNotePayload,
+  UpdateStudentNotePayload,
+  GetStudentNotesParams,
 } from '../services/api';
 

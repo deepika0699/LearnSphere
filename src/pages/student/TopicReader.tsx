@@ -46,6 +46,7 @@ import {
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { FeedbackState } from '../../components/FeedbackState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { TopicHighlightNoteTrigger } from '../../components/notes/TopicHighlightNoteTrigger';
 
 /**
  * Validates that an input URL string is strictly HTTP or HTTPS.
@@ -125,6 +126,7 @@ export const TopicReader: React.FC = () => {
   // Student Enrollment & Progress State
   const [enrollment, setEnrollment] = useState<StudentEnrollment | null>(null);
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
+  const [isCheckingEnrollment, setIsCheckingEnrollment] = useState<boolean>(true);
   const [completedTopicIds, setCompletedTopicIds] = useState<Set<string>>(new Set());
   const [courseAssessments, setCourseAssessments] = useState<StudentAssessmentProgressItem[]>([]);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState<boolean>(false);
@@ -144,6 +146,9 @@ export const TopicReader: React.FC = () => {
     course: PublicCourse;
     modules: PublicModuleStructure[];
   } | null>(null);
+
+  // Ref for the main educational content container to anchor highlight note selections
+  const contentContainerRef = useRef<HTMLElement | null>(null);
 
   // Document Title
   useDocumentTitle(
@@ -307,9 +312,11 @@ export const TopicReader: React.FC = () => {
         setIsEnrolled(false);
         setEnrollment(null);
         setCompletedTopicIds(new Set());
+        setIsCheckingEnrollment(false);
         return;
       }
 
+      setIsCheckingEnrollment(true);
       try {
         const enrollData = await studentEnrollmentApi.getEnrollmentByCourseId(courseId, accessToken);
         if (!isSubscribed) return;
@@ -329,6 +336,10 @@ export const TopicReader: React.FC = () => {
           } catch {
             // Non-blocking progress load
           }
+        } else if (enrollData && enrollData.status === 'withdrawn') {
+          setIsEnrolled(false);
+          setEnrollment(enrollData);
+          setCompletedTopicIds(new Set());
         } else {
           setIsEnrolled(false);
           setEnrollment(null);
@@ -338,6 +349,10 @@ export const TopicReader: React.FC = () => {
         if (isSubscribed) {
           setIsEnrolled(false);
           setEnrollment(null);
+        }
+      } finally {
+        if (isSubscribed) {
+          setIsCheckingEnrollment(false);
         }
       }
     };
@@ -363,6 +378,11 @@ export const TopicReader: React.FC = () => {
       return;
     }
 
+    if (enrollment?.status === 'withdrawn') {
+      setProgressError('Cannot update topic progress for a withdrawn enrollment.');
+      return;
+    }
+
     if (!isEnrolled) {
       setProgressError('You must be enrolled in this course to save topic progress.');
       return;
@@ -381,13 +401,34 @@ export const TopicReader: React.FC = () => {
           next.delete(topicId);
           return next;
         });
+        // Uncompleting a topic reverts completed course back to active in backend
+        setEnrollment((prev) =>
+          prev && prev.status === 'completed'
+            ? { ...prev, status: 'active', completedAt: null }
+            : prev
+        );
       } else {
-        await studentProgressApi.markTopicCompleted(courseId, topicId, accessToken);
+        const res = await studentProgressApi.markTopicCompleted(courseId, topicId, accessToken);
         setCompletedTopicIds((prev) => {
           const next = new Set(prev);
           next.add(topicId);
           return next;
         });
+        // Immediately synchronize enrollment status and completion timestamp from server response
+        if (res.enrollmentStatus) {
+          setEnrollment((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: res.enrollmentStatus,
+                  completedAt:
+                    res.enrollmentStatus === 'completed'
+                      ? prev.completedAt || new Date().toISOString()
+                      : null,
+                }
+              : prev
+          );
+        }
       }
     } catch (err: any) {
       setProgressError(err?.message || 'Failed to update topic progress. Please try again.');
@@ -603,7 +644,20 @@ export const TopicReader: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Main Reading Column (Content) */}
-          <main className="w-full lg:flex-1 space-y-8 min-w-0" id="topic-content-main">
+          <main ref={contentContainerRef} className="w-full lg:flex-1 space-y-8 min-w-0" id="topic-content-main">
+            {/* Contextual Highlight-to-Notes Trigger & Composer (Authenticated Students) */}
+            <TopicHighlightNoteTrigger
+              courseId={course.id}
+              moduleId={currentTopicItem?.module.id || null}
+              topicId={topicContent.id || topicId || ''}
+              courseTitle={course.title}
+              moduleTitle={currentTopicItem?.module.title}
+              topicTitle={topicContent.title}
+              accessToken={accessToken}
+              isStudent={Boolean(isStudent)}
+              contentContainerRef={contentContainerRef}
+            />
+
             {/* Topic Header Card */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -670,8 +724,41 @@ export const TopicReader: React.FC = () => {
               )}
             </div>
 
+            {/* Course Completion Banner */}
+            {enrollment?.status === 'completed' && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-emerald-900" id="topic-reader-course-completed-banner">
+                <div className="flex items-center space-x-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <div>
+                    <strong className="block font-semibold">Course Completed</strong>
+                    <span className="text-emerald-700">You have completed all required topics and assessments in this course.</span>
+                  </div>
+                </div>
+                <Link
+                  to={`/courses/${course.id}`}
+                  className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs transition-colors shadow-2xs flex-shrink-0"
+                >
+                  <span>Review Curriculum</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
+
+            {/* Withdrawn Enrollment Alert Banner */}
+            {isStudent && enrollment?.status === 'withdrawn' && (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start space-x-3 text-xs text-rose-900" id="withdrawn-mode-banner">
+                <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block font-semibold">Enrollment Withdrawn</strong>
+                  <span className="text-rose-800">
+                    Your enrollment in this course has been withdrawn. Topics and quizzes cannot be marked as completed while withdrawn.
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Unenrolled Preview Mode Alert Banner */}
-            {isStudent && !isEnrolled && (
+            {isStudent && !isCheckingEnrollment && !isEnrolled && enrollment?.status !== 'withdrawn' && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900" id="preview-mode-enrollment-banner">
                 <div className="flex items-start space-x-2.5">
                   <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -1232,20 +1319,33 @@ export const TopicReader: React.FC = () => {
                   <div className="flex items-center justify-between text-[11px] font-mono text-slate-600 mb-1">
                     <span>Progress:</span>
                     <span className="font-bold text-slate-900">
-                      {Math.round((completedTopicIds.size / flattenedTopics.length) * 100)}%
+                      {Math.min(100, Math.max(0, Math.round((completedTopicIds.size / flattenedTopics.length) * 100)))}%
                     </span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
                     <div
                       className="h-full bg-emerald-600 rounded-full transition-all duration-300"
                       style={{
-                        width: `${Math.min(100, Math.round((completedTopicIds.size / flattenedTopics.length) * 100))}%`,
+                        width: `${Math.min(100, Math.max(0, Math.round((completedTopicIds.size / flattenedTopics.length) * 100)))}%`,
                       }}
                     />
                   </div>
-                  <p className="text-[10px] text-slate-400 font-mono mt-1 text-right">
-                    {completedTopicIds.size} of {flattenedTopics.length} topics completed
-                  </p>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-1">
+                    {enrollment?.status === 'completed' ? (
+                      <span className="text-emerald-700 font-semibold flex items-center">
+                        <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-600" /> Course Completed
+                      </span>
+                    ) : enrollment?.status === 'withdrawn' ? (
+                      <span className="text-rose-700 font-semibold flex items-center">
+                        <AlertCircle className="w-3 h-3 mr-0.5 text-rose-600" /> Withdrawn
+                      </span>
+                    ) : (
+                      <span>In Progress</span>
+                    )}
+                    <span>
+                      {completedTopicIds.size} of {flattenedTopics.length} topics
+                    </span>
+                  </div>
                 </div>
               )}
             </div>

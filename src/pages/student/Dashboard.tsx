@@ -27,6 +27,7 @@ import {
   GraduationCap,
   Calendar,
   AlertCircle,
+  StickyNote,
 } from 'lucide-react';
 
 /**
@@ -207,6 +208,14 @@ export const Dashboard: React.FC = () => {
             <Compass className="w-3.5 h-3.5" />
             <span>Browse Catalog</span>
           </Link>
+
+          <Link
+            to="/notes"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-colors"
+          >
+            <StickyNote className="w-3.5 h-3.5 text-slate-500" />
+            <span>My Notes</span>
+          </Link>
         </div>
       </div>
 
@@ -297,8 +306,8 @@ export const Dashboard: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {courses.map((course: StudentDashboardCourseSummary) => {
-                const isComplete = course.isCompleted;
-                const hasStarted = course.completedTopics > 0;
+                const isComplete = course.isCompleted || course.enrollmentStatus === 'completed';
+                const hasStarted = course.completedTopics > 0 || (course.passedAssessments !== undefined && course.passedAssessments > 0);
                 const courseUrl = `/courses/${course.courseId || course.id}`;
 
                 return (
@@ -448,9 +457,14 @@ export const Dashboard: React.FC = () => {
                       {recent.title}
                     </h4>
                     <div className="flex items-center justify-between text-[11px] text-slate-500">
-                      <span>{recent.completionPercentage}% complete</span>
+                      <span>
+                        {recent.isCompleted || recent.enrollmentStatus === 'completed'
+                          ? '100% complete'
+                          : `${recent.completionPercentage}% complete`}
+                      </span>
                       <span className="text-[10px] text-primary-600 font-semibold group-hover:underline flex items-center">
-                        Continue <ArrowRight className="w-3 h-3 ml-0.5" />
+                        {recent.isCompleted || recent.enrollmentStatus === 'completed' ? 'Review' : 'Continue'}{' '}
+                        <ArrowRight className="w-3 h-3 ml-0.5" />
                       </span>
                     </div>
                   </Link>

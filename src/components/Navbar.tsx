@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
-import { BookOpen, Trophy, Award, User as UserIcon, LogOut, Menu, X, Flame, Home as HomeIcon, Info, Mail, Shield, Sparkles } from 'lucide-react';
+import { BookOpen, Award, User as UserIcon, LogOut, Menu, X, Home as HomeIcon, Info, Mail, Shield, Sparkles, StickyNote, LayoutDashboard } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { state, logout } = useApp();
@@ -29,7 +29,8 @@ export const Navbar: React.FC = () => {
     { path: '/contact', label: 'Contact', icon: Mail },
     ...(user
       ? [
-          { path: '/dashboard', label: 'Dashboard', icon: Trophy },
+          { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { path: '/notes', label: 'My Notes', icon: StickyNote },
           { path: '/certificates', label: 'Certificates', icon: Award },
           ...(user.role === 'admin'
             ? [{ path: '/admin', label: 'Admin Console', icon: Shield }]
@@ -113,24 +114,6 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
-                {/* Streak Counter */}
-                <div 
-                  className="flex items-center space-x-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-amber-100" 
-                  title="Daily Learning Streak"
-                >
-                  <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                  <span>{user.streak} day streak</span>
-                </div>
-
-                {/* XP Indicator */}
-                <div 
-                  className="flex items-center space-x-1 bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-primary-100" 
-                  title="Experience Points"
-                >
-                  <Trophy className="w-3.5 h-3.5 text-primary-500" />
-                  <span>{user.xp} XP</span>
-                </div>
-
                 {/* Profile Link */}
                 <Link
                   to="/profile"
@@ -179,20 +162,8 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Menu Trigger & Stats */}
+          {/* Mobile Menu Trigger */}
           <div className="flex md:hidden items-center">
-            {user && (
-              <div className="flex items-center space-x-2 mr-3">
-                <div className="flex items-center space-x-0.5 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-amber-100">
-                  <Flame className="w-3 h-3 fill-amber-500 text-amber-500" />
-                  <span>{user.streak}d</span>
-                </div>
-                <div className="flex items-center space-x-0.5 bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-primary-100">
-                  <Trophy className="w-3 h-3 text-primary-500" />
-                  <span>{user.xp} XP</span>
-                </div>
-              </div>
-            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500"

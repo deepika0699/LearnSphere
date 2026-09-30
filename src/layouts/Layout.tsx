@@ -64,6 +64,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                 </li>
                 <li>
+                  <Link to="/notes" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                    My Notes
+                  </Link>
+                </li>
+                <li>
                   <Link to="/certificates" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
                     Verify Certificate
                   </Link>
