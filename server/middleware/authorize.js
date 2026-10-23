@@ -4,9 +4,9 @@ import User, { CANONICAL_ROLES, normalizeRole } from '../models/User.js';
 export { CANONICAL_ROLES, normalizeRole };
 
 /**
- * Valid supported roles in the LearnSphere platform, with courseCreator as canonical.
+ * Valid supported roles in the LearnSphere platform, with course_creator as canonical.
  */
-export const SUPPORTED_ROLES = Object.freeze(['student', 'courseCreator', 'course_creator', 'admin']);
+export const SUPPORTED_ROLES = Object.freeze(['student', 'course_creator', 'courseCreator', 'admin']);
 
 /**
  * Role-Based Authorization Middleware Factory
@@ -17,8 +17,8 @@ export const SUPPORTED_ROLES = Object.freeze(['student', 'courseCreator', 'cours
  * - Validates that the user ID is a valid MongoDB ObjectId.
  * - Queries MongoDB directly using `User.findById(userId)` to establish the authoritative current role.
  * - Never trusts role values from `req.body`, `req.query`, `req.params`, or client headers.
- * - Enforces canonical role naming: 'courseCreator' is canonical ('course_creator' is normalized).
- * - Supports flexible role specification: e.g., `authorize('admin')`, `authorize('courseCreator')`, or `authorize(['courseCreator', 'admin'])`.
+ * - Enforces canonical role naming: 'course_creator' is canonical ('courseCreator' is normalized).
+ * - Supports flexible role specification: e.g., `authorize('admin')`, `authorize('course_creator')`, or `authorize(['course_creator', 'admin'])`.
  * - If the authenticated user is missing from `req.user` or no longer exists in MongoDB (deleted user), returns HTTP 401 Unauthorized.
  * - If the user's role is not a supported platform role, or not in the permitted roles list, returns HTTP 403 Forbidden.
  * - Uses generic sanitized error messages without exposing database errors, stack traces, or internal details.
@@ -89,10 +89,10 @@ export const authorize = (...roles) => {
 
 /**
  * Reusable Course Creator authorization boundary.
- * Strictly requires the authoritative database role to be 'courseCreator'.
+ * Strictly requires the authoritative database role to be 'course_creator'.
  * Fails closed for students (403), admins (403), or invalid roles (403).
  */
-export const requireCourseCreator = authorize('courseCreator');
+export const requireCourseCreator = authorize('course_creator');
 
 /**
  * Reusable Administrator authorization boundary.
@@ -102,7 +102,7 @@ export const requireAdmin = authorize('admin');
 /**
  * Reusable Student authorization boundary.
  * Strictly requires the authoritative database role to be 'student'.
- * Fails closed for courseCreators (403), admins (403), or invalid roles (403).
+ * Fails closed for course_creators (403), admins (403), or invalid roles (403).
  */
 export const requireStudent = authorize('student');
 

@@ -35,7 +35,7 @@ export const Navbar: React.FC = () => {
           ...(user.role === 'admin'
             ? [{ path: '/admin', label: 'Admin Console', icon: Shield }]
             : []),
-          ...(user.role === 'courseCreator'
+          ...(user.role === 'course_creator' || (user.role as string) === 'courseCreator'
             ? [{ path: '/creator', label: 'Creator Studio', icon: Sparkles }]
             : []),
         ]

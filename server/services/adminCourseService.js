@@ -7,7 +7,7 @@ import { sanitizeModule } from './adminModuleService.js';
 import { sanitizeTopic } from './adminTopicService.js';
 
 /**
- * Validates that a course creator exists, is active, and possesses the canonical 'courseCreator' role.
+ * Validates that a course creator exists, is active, and possesses the canonical 'course_creator' role.
  *
  * @param {string} creatorId
  * @returns {Promise<Object>} Safe course creator profile
@@ -26,7 +26,7 @@ const validateActiveCourseCreator = async (creatorId) => {
     throw error;
   }
 
-  if (normalizeRole(creator.role) !== 'courseCreator') {
+  if (normalizeRole(creator.role) !== 'course_creator') {
     const error = new Error('Referenced user is not a course creator');
     error.statusCode = 400;
     throw error;

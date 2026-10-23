@@ -814,7 +814,7 @@ export const TopicReader: React.FC = () => {
                   Content Coming Soon
                 </h3>
                 <p className="text-slate-500 text-xs sm:text-sm max-w-md mx-auto">
-                  The instructor has created this topic outline and is currently finalizing the educational reading sections and media materials.
+                  The Course Creator has created this topic outline and is currently finalizing the educational reading sections and media materials.
                 </p>
               </div>
             ) : (

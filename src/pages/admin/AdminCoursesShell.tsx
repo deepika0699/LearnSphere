@@ -311,7 +311,7 @@ export const AdminCoursesShell: React.FC = () => {
     setCreatorsError(null);
     try {
       const res = await adminApi.getUsers(accessToken, {
-        role: 'courseCreator',
+        role: 'course_creator',
         status: 'active',
         limit: 100,
       });

@@ -235,7 +235,7 @@ export const CreatorDashboardShell: React.FC = () => {
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
             <span className="text-slate-500">Authoritative Role</span>
             <span className="font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-              courseCreator
+              Course Creator
             </span>
           </div>
         </div>

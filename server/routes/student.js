@@ -32,6 +32,11 @@ import {
   updateNoteHandler,
   deleteNoteHandler,
 } from '../controllers/studentNoteController.js';
+import {
+  getStudentCertificatesHandler,
+  claimCertificateHandler,
+  getStudentCertificateByIdHandler,
+} from '../controllers/studentCertificateController.js';
 
 const router = Router();
 
@@ -321,6 +326,33 @@ router.get('/notes/stats', getNotesStatsHandler);
 router.get('/notes/:id', noteIdParamValidation, getNoteByIdHandler);
 router.put('/notes/:id', updateNoteValidation, updateNoteHandler);
 router.delete('/notes/:id', noteIdParamValidation, deleteNoteHandler);
+
+/**
+ * Validation rules for POST /api/student/certificates/claim/:courseId
+ */
+const claimCertificateValidation = [
+  param('courseId')
+    .trim()
+    .isMongoId()
+    .withMessage('Invalid course ID format'),
+  validateRequest,
+];
+
+/**
+ * Validation rules for GET /api/student/certificates/:certificateId
+ */
+const studentCertificateIdValidation = [
+  param('certificateId')
+    .trim()
+    .matches(/^LS-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/i)
+    .withMessage('Invalid certificate ID format'),
+  validateRequest,
+];
+
+// Mount student certificate endpoints
+router.get('/certificates', getStudentCertificatesHandler);
+router.post('/certificates/claim/:courseId', claimCertificateValidation, claimCertificateHandler);
+router.get('/certificates/:certificateId', studentCertificateIdValidation, getStudentCertificateByIdHandler);
 
 export default router;
 

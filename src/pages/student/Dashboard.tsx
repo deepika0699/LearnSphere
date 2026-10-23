@@ -368,7 +368,7 @@ export const Dashboard: React.FC = () => {
 
                           {course.courseCreator?.name && (
                             <p className="text-xs text-slate-500">
-                              Instructor: <span className="font-medium text-slate-700">{course.courseCreator.name}</span>
+                              Course Creator: <span className="font-medium text-slate-700">{course.courseCreator.name}</span>
                             </p>
                           )}
                         </div>

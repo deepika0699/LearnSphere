@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UserRole } from '../types';
+import { UserRole, Certificate, PublicCertificateVerification } from '../types';
 
 export interface AuthUserResponse {
   id: string;
@@ -174,7 +174,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'courseCreator' | 'admin';
+  role: 'student' | 'course_creator' | 'admin';
   status: 'active' | 'inactive';
   createdAt?: string;
   updatedAt?: string;
@@ -198,7 +198,7 @@ export interface GetUsersParams {
   page?: number;
   limit?: number;
   search?: string;
-  role?: 'student' | 'courseCreator' | 'admin' | '';
+  role?: 'student' | 'course_creator' | 'admin' | '';
   status?: 'active' | 'inactive' | '';
 }
 
@@ -634,7 +634,7 @@ export const adminApi = {
   async updateUserRole(
     accessToken: string,
     id: string,
-    role: 'student' | 'courseCreator' | 'admin'
+    role: 'student' | 'course_creator' | 'admin'
   ): Promise<AdminUser> {
     const res = await apiRequest<{ status: string; message: string; data: { user: AdminUser } }>(
       `/api/admin/users/${encodeURIComponent(id)}/role`,
@@ -3017,5 +3017,69 @@ export const studentNoteApi = {
     return res.data;
   },
 };
+
+/**
+ * Student Certificate API
+ * Manages certificate queries and claims for authenticated students.
+ */
+export const studentCertificateApi = {
+  /**
+   * GET /api/student/certificates
+   * Retrieves all certificates earned by the authenticated student.
+   */
+  async getStudentCertificates(accessToken?: string | null): Promise<Certificate[]> {
+    const res = await apiRequest<{ status: string; data: { certificates: Certificate[] } }>(
+      '/api/student/certificates',
+      { method: 'GET' },
+      accessToken
+    );
+    return res.data.certificates;
+  },
+
+  /**
+   * POST /api/student/certificates/claim/:courseId
+   * Authoritatively claims/issues an academic certificate for a completed course.
+   */
+  async claimCertificate(courseId: string, accessToken?: string | null): Promise<Certificate> {
+    const res = await apiRequest<{ status: string; data: { certificate: Certificate } }>(
+      `/api/student/certificates/claim/${encodeURIComponent(courseId)}`,
+      { method: 'POST' },
+      accessToken
+    );
+    return res.data.certificate;
+  },
+
+  /**
+   * GET /api/student/certificates/:certificateId
+   * Retrieves a single certificate by public certificateId belonging to the authenticated student.
+   */
+  async getStudentCertificate(certificateId: string, accessToken?: string | null): Promise<Certificate> {
+    const res = await apiRequest<{ status: string; data: { certificate: Certificate } }>(
+      `/api/student/certificates/${encodeURIComponent(certificateId)}`,
+      { method: 'GET' },
+      accessToken
+    );
+    return res.data.certificate;
+  },
+};
+
+/**
+ * Public Certificate Verification API
+ * Publicly verifies academic credentials without authentication.
+ */
+export const publicCertificateApi = {
+  /**
+   * GET /api/certificates/verify/:certificateId
+   * Publicly verifies an academic certificate by certificate ID.
+   */
+  async verifyCertificatePublic(certificateId: string): Promise<PublicCertificateVerification> {
+    const res = await apiRequest<{ status: string; data: { certificate: PublicCertificateVerification } }>(
+      `/api/certificates/verify/${encodeURIComponent(certificateId)}`,
+      { method: 'GET' }
+    );
+    return res.data.certificate;
+  },
+};
+
 
 

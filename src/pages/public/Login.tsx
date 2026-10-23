@@ -29,7 +29,7 @@ function getSafeRedirectPath(userRole: string, fromPath?: string): string {
     return '/admin/dashboard';
   }
 
-  if (userRole === 'courseCreator') {
+  if (userRole === 'course_creator' || userRole === 'courseCreator') {
     if (isValidInternalPath && fromPath.startsWith('/creator')) {
       return fromPath;
     }

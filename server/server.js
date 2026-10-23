@@ -10,6 +10,7 @@ import adminRouter from './routes/admin.js';
 import courseCreatorRouter from './routes/courseCreator.js';
 import coursesRouter from './routes/courses.js';
 import studentRouter from './routes/student.js';
+import certificatesRouter from './routes/certificates.js';
 import { connectDB } from './config/db.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
@@ -85,6 +86,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/creator', courseCreatorRouter);
 app.use('/api/courses', coursesRouter);
 app.use('/api/student', studentRouter);
+app.use('/api/certificates', certificatesRouter);
 
 // 404 Catch-All Handler
 app.use(notFoundHandler);

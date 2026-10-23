@@ -20,7 +20,7 @@ interface CreatorRouteProps {
  * - Redirects unauthenticated users to /login
  * - Redirects authenticated students to /dashboard
  * - Redirects authenticated admins to /admin
- * - Renders protected creator area only if role is strictly 'courseCreator'
+ * - Renders protected creator area only if role is strictly 'course_creator'
  */
 export const CreatorRoute: React.FC<CreatorRouteProps> = ({ children }) => {
   const { state, isLoading, isAuthenticated } = useApp();
@@ -40,8 +40,8 @@ export const CreatorRoute: React.FC<CreatorRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 3. If the user is authenticated but is NOT a courseCreator, redirect appropriately
-  if (state.user.role !== 'courseCreator') {
+  // 3. If the user is authenticated but is NOT a course_creator, redirect appropriately
+  if (state.user.role !== 'course_creator' && (state.user.role as string) !== 'courseCreator') {
     if (state.user.role === 'admin') {
       return <Navigate to="/admin" replace />;
     }

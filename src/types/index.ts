@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type UserRole = 'student' | 'courseCreator' | 'admin';
+export type UserRole = 'student' | 'course_creator' | 'admin';
 
 export interface User {
   id: string;
@@ -77,11 +77,27 @@ export interface Quiz {
 
 export interface Certificate {
   id: string;
+  certificateId: string;
   courseId: string;
   courseTitle: string;
   studentName: string;
   issueDate: string;
-  credentialId: string;
+  completedAt?: string | null;
+  status: 'valid' | 'revoked';
+  userId?: string;
+  credentialId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PublicCertificateVerification {
+  certificateId: string;
+  studentName: string;
+  courseTitle: string;
+  issueDate: string;
+  completedAt: string | null;
+  status: 'valid' | 'revoked';
+  isValid: boolean;
 }
 
 export interface UserState {

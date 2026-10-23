@@ -4,7 +4,7 @@ import User, { normalizeRole } from '../models/User.js';
 import { sanitizeCourse } from './adminCourseService.js';
 
 /**
- * Validates that an authenticated creator exists, is active, and possesses the canonical 'courseCreator' role.
+ * Validates that an authenticated creator exists, is active, and possesses the canonical 'course_creator' role.
  *
  * @param {string|mongoose.Types.ObjectId} creatorId
  * @returns {Promise<Object>} Safe creator profile
@@ -24,7 +24,7 @@ export const validateActiveCreator = async (creatorId) => {
   }
 
   const canonicalRole = normalizeRole(creator.role);
-  if (canonicalRole !== 'courseCreator') {
+  if (canonicalRole !== 'course_creator') {
     const error = new Error('Access denied: insufficient permissions');
     error.statusCode = 403;
     throw error;

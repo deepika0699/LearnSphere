@@ -4,11 +4,11 @@ import bcrypt from 'bcryptjs';
 /**
  * Canonical LearnSphere platform roles.
  */
-export const CANONICAL_ROLES = Object.freeze(['student', 'courseCreator', 'admin']);
+export const CANONICAL_ROLES = Object.freeze(['student', 'course_creator', 'admin']);
 
 /**
  * Normalizes any recognized role variant to the canonical role name.
- * Maps legacy 'course_creator' to 'courseCreator'.
+ * Maps legacy 'courseCreator' to canonical 'course_creator'.
  *
  * @param {string} role - The raw role string.
  * @returns {string|null} Normalized canonical role or null if invalid/unrecognized.
@@ -16,8 +16,8 @@ export const CANONICAL_ROLES = Object.freeze(['student', 'courseCreator', 'admin
 export const normalizeRole = (role) => {
   if (!role || typeof role !== 'string') return null;
   const trimmed = role.trim();
-  if (trimmed === 'courseCreator' || trimmed === 'course_creator') {
-    return 'courseCreator';
+  if (trimmed === 'course_creator' || trimmed === 'courseCreator') {
+    return 'course_creator';
   }
   const lower = trimmed.toLowerCase();
   if (lower === 'student') return 'student';
@@ -55,8 +55,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Role is required'],
       enum: {
-        values: ['student', 'courseCreator', 'admin'],
-        message: 'Role must be student, courseCreator, or admin',
+        values: ['student', 'course_creator', 'admin'],
+        message: 'Role must be student, course_creator, or admin',
       },
       default: 'student',
     },
@@ -103,7 +103,7 @@ userSchema.pre('validate', function () {
 
 /**
  * Pre-save hook:
- * 1. Normalizes role to canonical LearnSphere role (e.g. course_creator -> courseCreator)
+ * 1. Normalizes role to canonical LearnSphere role (e.g. courseCreator -> course_creator)
  * 2. Hashes password securely using bcrypt before saving.
  * Ensures plaintext passwords are never stored in the database.
  */

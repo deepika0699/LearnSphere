@@ -36,8 +36,8 @@ const getUsersValidation = [
   query('role')
     .optional()
     .trim()
-    .isIn(['student', 'courseCreator', 'admin'])
-    .withMessage('Role must be one of: student, courseCreator, admin'),
+    .isIn(['student', 'course_creator', 'courseCreator', 'admin'])
+    .withMessage('Role must be one of: student, course_creator, admin'),
   query('status')
     .optional()
     .trim()
@@ -70,8 +70,8 @@ const updateUserRoleValidation = [
     .withMessage('Role is required')
     .isString()
     .withMessage('Role must be a string')
-    .isIn(['student', 'courseCreator', 'admin'])
-    .withMessage('Role must be one of: student, courseCreator, admin'),
+    .isIn(['student', 'course_creator', 'courseCreator', 'admin'])
+    .withMessage('Role must be one of: student, course_creator, admin'),
   validateRequest,
 ];
 

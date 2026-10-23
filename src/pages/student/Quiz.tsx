@@ -14,7 +14,7 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 export const Quiz: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { state, completeQuiz, addCertificate } = useApp();
+  const { state, completeQuiz } = useApp();
   const { user } = state;
 
   const course = MOCK_COURSES.find((c) => c.id === courseId);
@@ -74,10 +74,6 @@ export const Quiz: React.FC = () => {
     const passed = scorePct >= 66; // 66% threshold (2 out of 3, or all for short ones)
 
     completeQuiz(course.id, scorePct, passed);
-
-    if (passed) {
-      addCertificate(course.id, course.title);
-    }
 
     setIsQuizSubmitted(true);
   };

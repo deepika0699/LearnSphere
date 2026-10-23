@@ -53,7 +53,7 @@ export const AdminUsersShell: React.FC = () => {
   const [limit] = useState<number>(10);
   const [searchInput, setSearchInput] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [roleFilter, setRoleFilter] = useState<'student' | 'courseCreator' | 'admin' | ''>('');
+  const [roleFilter, setRoleFilter] = useState<'student' | 'course_creator' | 'admin' | ''>('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | ''>('');
 
   // UI state
@@ -64,7 +64,7 @@ export const AdminUsersShell: React.FC = () => {
 
   // Mutation modal state
   const [roleModalUser, setRoleModalUser] = useState<AdminUser | null>(null);
-  const [selectedRole, setSelectedRole] = useState<'student' | 'courseCreator' | 'admin'>('student');
+  const [selectedRole, setSelectedRole] = useState<'student' | 'course_creator' | 'admin'>('student');
   const [isSubmittingRole, setIsSubmittingRole] = useState<boolean>(false);
 
   const [statusModalUser, setStatusModalUser] = useState<AdminUser | null>(null);
@@ -131,7 +131,7 @@ export const AdminUsersShell: React.FC = () => {
   // Handle Role Change
   const handleOpenRoleModal = (user: AdminUser) => {
     setRoleModalUser(user);
-    setSelectedRole((user.role === ('course_creator' as any) ? 'courseCreator' : user.role) as 'student' | 'courseCreator' | 'admin');
+    setSelectedRole((user.role === ('courseCreator' as any) ? 'course_creator' : user.role) as 'student' | 'course_creator' | 'admin');
   };
 
   const handleConfirmRoleChange = async () => {
@@ -406,7 +406,7 @@ export const AdminUsersShell: React.FC = () => {
             >
               <option value="">All Roles</option>
               <option value="student">Students</option>
-              <option value="courseCreator">Course Creators</option>
+              <option value="course_creator">Course Creators</option>
               <option value="admin">Administrators</option>
             </select>
             <Filter className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -768,7 +768,7 @@ export const AdminUsersShell: React.FC = () => {
 
                   <label
                     className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedRole === 'courseCreator'
+                      selectedRole === 'course_creator'
                         ? 'border-primary-500 bg-primary-50/40 text-primary-900'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-800'
                     }`}
@@ -776,9 +776,9 @@ export const AdminUsersShell: React.FC = () => {
                     <input
                       type="radio"
                       name="role"
-                      value="courseCreator"
-                      checked={selectedRole === 'courseCreator'}
-                      onChange={() => setSelectedRole('courseCreator')}
+                      value="course_creator"
+                      checked={selectedRole === 'course_creator'}
+                      onChange={() => setSelectedRole('course_creator')}
                       className="text-primary-600 focus:ring-primary-500"
                     />
                     <div className="ml-3">

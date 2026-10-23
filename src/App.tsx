@@ -16,6 +16,7 @@ import { StudentRoute } from './components/StudentRoute';
 const Home = React.lazy(() => import('./pages/public/Home').then(m => ({ default: m.Home })));
 const About = React.lazy(() => import('./pages/public/About').then(m => ({ default: m.About })));
 const Contact = React.lazy(() => import('./pages/public/Contact').then(m => ({ default: m.Contact })));
+const VerifyCertificate = React.lazy(() => import('./pages/public/VerifyCertificate').then(m => ({ default: m.VerifyCertificate })));
 const Login = React.lazy(() => import('./pages/public/Login').then(m => ({ default: m.Login })));
 const Signup = React.lazy(() => import('./pages/public/Signup').then(m => ({ default: m.Signup })));
 const Dashboard = React.lazy(() => import('./pages/student/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/verify/:certificateId" element={<VerifyCertificate />} />
 
               {/* Authentication */}
               <Route path="/login" element={<Login />} />

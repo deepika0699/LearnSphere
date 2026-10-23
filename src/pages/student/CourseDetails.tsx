@@ -22,6 +22,8 @@ import {
   Clock,
   HelpCircle,
   GraduationCap,
+  Award,
+  ExternalLink,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import {
@@ -31,10 +33,12 @@ import {
   studentEnrollmentApi,
   studentProgressApi,
   studentAssessmentApi,
+  studentCertificateApi,
   StudentEnrollment,
   StudentCourseProgressSummary,
   StudentAssessmentProgressItem,
 } from '../../services/api';
+import { Certificate } from '../../types';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { FeedbackState } from '../../components/FeedbackState';
 import { EmptyState } from '../../components/EmptyState';
@@ -66,6 +70,12 @@ export const CourseDetails: React.FC = () => {
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
   const [enrollError, setEnrollError] = useState<string | null>(null);
   const [enrollSuccessMessage, setEnrollSuccessMessage] = useState<string | null>(null);
+
+  // Student Certificate State
+  const [certificate, setCertificate] = useState<Certificate | null>(null);
+  const [isClaimingCertificate, setIsClaimingCertificate] = useState<boolean>(false);
+  const [certificateError, setCertificateError] = useState<string | null>(null);
+  const [certificateSuccessMessage, setCertificateSuccessMessage] = useState<string | null>(null);
 
   useDocumentTitle(course ? course.title : isNotFound ? 'Course Not Found' : 'Course Details');
 
@@ -155,15 +165,22 @@ export const CourseDetails: React.FC = () => {
 
         if (enrollData && (enrollData.status === 'active' || enrollData.status === 'completed')) {
           try {
-            const [summary, assessData, progressData] = await Promise.all([
+            const [summary, assessData, progressData, certs] = await Promise.all([
               studentProgressApi.getCourseProgressSummary(courseId, accessToken),
               studentAssessmentApi.getCourseAssessments(courseId, accessToken),
               studentProgressApi.getCourseProgress(courseId, accessToken),
+              studentCertificateApi.getStudentCertificates(accessToken).catch(() => []),
             ]);
             if (isSubscribed) {
               setProgressSummary(summary);
               setAssessments(assessData || []);
               setCompletedTopicIds(new Set(progressData.completedTopicIds || []));
+              const existingCert = Array.isArray(certs)
+                ? certs.find((c: Certificate) => c.courseId === courseId)
+                : null;
+              if (existingCert) {
+                setCertificate(existingCert);
+              }
             }
           } catch {
             // Non-blocking progress summary error
@@ -172,6 +189,7 @@ export const CourseDetails: React.FC = () => {
           setProgressSummary(null);
           setAssessments([]);
           setCompletedTopicIds(new Set());
+          setCertificate(null);
         }
       } catch {
         // Non-blocking enrollment check
@@ -240,6 +258,27 @@ export const CourseDetails: React.FC = () => {
       }
     } finally {
       setIsEnrolling(false);
+    }
+  };
+
+  // Handle Certificate Claim Action
+  const handleClaimCertificate = async () => {
+    if (!courseId || !accessToken || isClaimingCertificate || !isStudent) return;
+
+    setIsClaimingCertificate(true);
+    setCertificateError(null);
+    setCertificateSuccessMessage(null);
+
+    try {
+      const claimed = await studentCertificateApi.claimCertificate(courseId, accessToken);
+      setCertificate(claimed);
+      setCertificateSuccessMessage('Congratulations! Your official academic credential has been issued.');
+    } catch (err: any) {
+      setCertificateError(
+        err?.message || 'Unable to issue certificate. Please ensure all completion criteria are met.'
+      );
+    } finally {
+      setIsClaimingCertificate(false);
     }
   };
 
@@ -830,6 +869,83 @@ export const CourseDetails: React.FC = () => {
                   <div className="text-[11px] font-mono text-emerald-700 flex items-center space-x-1 pt-0.5 border-t border-emerald-200/60">
                     <Calendar className="w-3 h-3 text-emerald-600" />
                     <span>Completed on {new Date(enrollment.completedAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Academic Certificate Card (For Completed Courses) */}
+            {enrollment && enrollment.status === 'completed' && (
+              <div className="bg-white border-2 border-emerald-500 rounded-xl p-4 space-y-3 shadow-xs" id="course-certificate-card">
+                <div className="flex items-center space-x-2 text-slate-900">
+                  <Award className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <h4 className="font-display font-bold text-sm">Academic Certificate</h4>
+                </div>
+
+                {certificate ? (
+                  <div className="space-y-3">
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Official credential issued for demonstrating comprehensive mastery of this subject.
+                    </p>
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 space-y-1">
+                      <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Credential ID</div>
+                      <div className="font-mono text-xs font-bold text-slate-900">{certificate.certificateId || certificate.id}</div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-1">
+                      <Link
+                        to="/certificates"
+                        className="w-full inline-flex items-center justify-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 rounded-lg transition-colors shadow-2xs"
+                      >
+                        <Award className="w-3.5 h-3.5" />
+                        <span>View Certificate</span>
+                      </Link>
+                      <Link
+                        to={`/verify/${encodeURIComponent(certificate.certificateId || certificate.id)}`}
+                        className="w-full inline-flex items-center justify-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs py-2 rounded-lg transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Public Verification</span>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      You have met all completion requirements and are eligible to claim your official academic credential.
+                    </p>
+
+                    {certificateError && (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-2.5 rounded-lg" role="alert">
+                        {certificateError}
+                      </div>
+                    )}
+
+                    {certificateSuccessMessage && (
+                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs p-2.5 rounded-lg font-medium">
+                        {certificateSuccessMessage}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleClaimCertificate}
+                      disabled={isClaimingCertificate}
+                      className="w-full inline-flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold text-xs py-2.5 rounded-lg transition-colors shadow-xs cursor-pointer disabled:cursor-not-allowed"
+                      id="claim-certificate-button"
+                    >
+                      {isClaimingCertificate ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          <span>Issuing Credential...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Award className="w-4 h-4" />
+                          <span>Claim Certificate</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 )}
               </div>

@@ -3,18 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { MOCK_COURSES } from '../../constants/data';
 import { ArrowRight, BookOpen, ShieldCheck, Zap, Sparkles, Star, ChevronRight, Flame, Trophy, Play, Award, BarChart3, ClipboardList } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { courseApi, PublicCourse } from '../../services/api';
+import { CourseCard } from '../../components/CourseCard';
 
 export const Home: React.FC = () => {
   useDocumentTitle('Self-Learning & Skills Validation');
   const { state } = useApp();
   const { user } = state;
+
+  const [courses, setCourses] = useState<PublicCourse[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    courseApi
+      .getCourses({ limit: 3, page: 1 })
+      .then((res) => {
+        if (isMounted) {
+          setCourses(res.courses || []);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setCourses([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -286,7 +309,7 @@ export const Home: React.FC = () => {
             </Link>
           </div>
 
-          {MOCK_COURSES.length === 0 ? (
+          {courses.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-xl p-16 text-center shadow-2xs max-w-2xl mx-auto space-y-4">
               <BookOpen className="w-10 h-10 text-slate-400 mx-auto" />
               <h3 className="font-display font-bold text-lg text-slate-800">No courses have been published yet.</h3>
@@ -307,59 +330,8 @@ export const Home: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {MOCK_COURSES.slice(0, 3).map((course) => (
-                <div
-                  key={course.id}
-                  className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col h-full"
-                >
-                  {/* Course Image */}
-                  <div className="relative h-48 bg-slate-100 overflow-hidden">
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-4 left-4 bg-slate-900 text-white text-[10px] font-mono px-2 py-0.5 rounded-md uppercase tracking-wider font-semibold">
-                      {course.category}
-                    </div>
-                  </div>
-
-                  {/* Course Info */}
-                  <div className="p-6 flex-grow flex flex-col justify-between">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2 text-xs text-slate-400 font-medium">
-                        <span>{course.duration}</span>
-                        <span>•</span>
-                        <span>{course.level}</span>
-                      </div>
-
-                      <h3 className="font-display font-semibold text-lg text-slate-900 leading-snug">
-                        {course.title}
-                      </h3>
-
-                      <p className="text-slate-500 text-sm line-clamp-2">
-                        {course.description}
-                      </p>
-                    </div>
-
-                    <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between">
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                        <span className="text-xs font-semibold text-slate-700">{course.rating}</span>
-                        <span className="text-xs text-slate-400">({course.reviewsCount})</span>
-                      </div>
-
-                      <Link
-                        to={`/courses/${course.id}`}
-                        className="inline-flex items-center text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
-                      >
-                        <span>Explore</span>
-                        <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+              {courses.slice(0, 3).map((course) => (
+                <CourseCard key={course.id} course={course} />
               ))}
             </div>
           )}

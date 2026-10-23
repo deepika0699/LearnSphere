@@ -69,8 +69,8 @@ export const getUsersList = async ({ page = 1, limit = 20, search, role, status 
 
   if (role) {
     const normalizedRole = normalizeRole(role);
-    if (normalizedRole === 'courseCreator') {
-      query.role = { $in: ['courseCreator', 'course_creator'] };
+    if (normalizedRole === 'course_creator') {
+      query.role = { $in: ['course_creator', 'courseCreator'] };
     } else if (normalizedRole) {
       query.role = normalizedRole;
     }
