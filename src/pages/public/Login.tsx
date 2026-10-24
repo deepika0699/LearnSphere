@@ -61,14 +61,17 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const searchParams = new URLSearchParams(location.search);
+  const returnUrlParam = searchParams.get('returnUrl') || (location.state as any)?.returnUrl;
+
   // If already authenticated with authoritative role, navigate to appropriate area
   useEffect(() => {
     if (isAuthenticated && state.user) {
-      const fromPath = (location.state as any)?.from?.pathname;
+      const fromPath = (location.state as any)?.from?.pathname || returnUrlParam;
       const targetPath = getSafeRedirectPath(state.user.role, fromPath);
       navigate(targetPath, { replace: true });
     }
-  }, [isAuthenticated, state.user, navigate, location]);
+  }, [isAuthenticated, state.user, navigate, location, returnUrlParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +87,7 @@ export const Login: React.FC = () => {
     setIsSubmitting(false);
 
     if (result.success && result.user) {
-      const fromPath = (location.state as any)?.from?.pathname;
+      const fromPath = (location.state as any)?.from?.pathname || returnUrlParam;
       const targetPath = getSafeRedirectPath(result.user.role, fromPath);
       navigate(targetPath, { replace: true });
     } else {
@@ -190,7 +193,10 @@ export const Login: React.FC = () => {
 
           <p className="text-center text-xs text-slate-500">
             Don't have an account?{' '}
-            <Link to="/signup" className="font-semibold text-primary-600 hover:text-primary-700">
+            <Link
+              to={returnUrlParam ? `/signup?returnUrl=${encodeURIComponent(returnUrlParam)}` : '/signup'}
+              className="font-semibold text-primary-600 hover:text-primary-700"
+            >
               Sign up for free
             </Link>
           </p>

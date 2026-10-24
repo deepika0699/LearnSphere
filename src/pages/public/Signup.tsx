@@ -3,21 +3,74 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { User, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
+/**
+ * Safely resolves post-signup destination path based on authoritative user role
+ * and validated internal return path.
+ */
+function getSafeRedirectPath(userRole: string, fromPath?: string): string {
+  const isValidInternalPath =
+    typeof fromPath === 'string' &&
+    fromPath.startsWith('/') &&
+    !fromPath.startsWith('//') &&
+    !fromPath.startsWith('/\\') &&
+    !fromPath.includes(':');
+
+  if (userRole === 'admin') {
+    if (isValidInternalPath && fromPath.startsWith('/admin')) {
+      return fromPath;
+    }
+    return '/admin/dashboard';
+  }
+
+  if (userRole === 'course_creator' || userRole === 'courseCreator') {
+    if (isValidInternalPath && fromPath.startsWith('/creator')) {
+      return fromPath;
+    }
+    return '/creator/dashboard';
+  }
+
+  // Student role
+  if (
+    isValidInternalPath &&
+    !fromPath.startsWith('/admin') &&
+    !fromPath.startsWith('/creator') &&
+    fromPath !== '/login' &&
+    fromPath !== '/signup'
+  ) {
+    return fromPath;
+  }
+
+  return '/dashboard';
+}
+
 export const Signup: React.FC = () => {
   useDocumentTitle('Sign Up');
-  const { signup } = useApp();
+  const { signup, isAuthenticated, state } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const searchParams = new URLSearchParams(location.search);
+  const returnUrlParam = searchParams.get('returnUrl') || (location.state as any)?.returnUrl;
+
+  // If already authenticated with authoritative role, navigate to appropriate area
+  useEffect(() => {
+    if (isAuthenticated && state.user) {
+      const fromPath = (location.state as any)?.from?.pathname || returnUrlParam;
+      const targetPath = getSafeRedirectPath(state.user.role, fromPath);
+      navigate(targetPath, { replace: true });
+    }
+  }, [isAuthenticated, state.user, navigate, location, returnUrlParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +90,10 @@ export const Signup: React.FC = () => {
     const result = await signup(name, email, password);
     setIsSubmitting(false);
 
-    if (result.success) {
-      navigate('/dashboard');
+    if (result.success && result.user) {
+      const fromPath = (location.state as any)?.from?.pathname || returnUrlParam;
+      const targetPath = getSafeRedirectPath(result.user.role, fromPath);
+      navigate(targetPath, { replace: true });
     } else {
       setError(result.error || 'Registration failed. Please try again.');
     }
@@ -163,7 +218,10 @@ export const Signup: React.FC = () => {
 
           <p className="text-center text-xs text-slate-500">
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-700">
+            <Link
+              to={returnUrlParam ? `/login?returnUrl=${encodeURIComponent(returnUrlParam)}` : '/login'}
+              className="font-semibold text-primary-600 hover:text-primary-700"
+            >
               Log in
             </Link>
           </p>

@@ -111,8 +111,8 @@ type VideoLang = 'english' | 'telugu' | 'hindi';
 export const TopicReader: React.FC = () => {
   const { courseId, topicId } = useParams<{ courseId: string; topicId: string }>();
   const navigate = useNavigate();
-  const { accessToken, state } = useApp();
-  const { isAuthenticated, user } = state;
+  const { accessToken, state, isAuthenticated, isLoading: authLoading } = useApp();
+  const { user } = state;
   const isStudent = isAuthenticated && user?.role === 'student';
 
   // Course & Topic Content State
@@ -308,6 +308,7 @@ export const TopicReader: React.FC = () => {
     let isSubscribed = true;
 
     const fetchEnrollmentAndProgress = async () => {
+      if (authLoading) return;
       if (!courseId || !isStudent || !accessToken) {
         setIsEnrolled(false);
         setEnrollment(null);
@@ -362,7 +363,7 @@ export const TopicReader: React.FC = () => {
     return () => {
       isSubscribed = false;
     };
-  }, [courseId, isStudent, accessToken]);
+  }, [courseId, isStudent, accessToken, authLoading]);
 
   // Toggle individual topic completion status (Idempotent PUT / DELETE)
   const handleToggleProgress = async () => {

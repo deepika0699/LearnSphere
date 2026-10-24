@@ -48,8 +48,8 @@ export const CourseDetails: React.FC = () => {
   const { id, courseId: paramCourseId } = useParams<{ id?: string; courseId?: string }>();
   const courseId = paramCourseId || id;
   const navigate = useNavigate();
-  const { accessToken, state } = useApp();
-  const { isAuthenticated, user } = state;
+  const { accessToken, state, isAuthenticated, isLoading: authLoading } = useApp();
+  const { user } = state;
   const isStudent = isAuthenticated && user?.role === 'student';
 
   const [course, setCourse] = useState<PublicCourse | null>(null);
@@ -151,6 +151,7 @@ export const CourseDetails: React.FC = () => {
     let isSubscribed = true;
 
     const checkEnrollmentAndProgress = async () => {
+      if (authLoading) return;
       if (!courseId || !isStudent || !accessToken) {
         setEnrollment(null);
         setProgressSummary(null);
@@ -205,7 +206,7 @@ export const CourseDetails: React.FC = () => {
     return () => {
       isSubscribed = false;
     };
-  }, [courseId, isStudent, accessToken]);
+  }, [courseId, isStudent, accessToken, authLoading]);
 
   // Handle Enrollment Action
   const handleEnroll = async () => {
@@ -231,11 +232,13 @@ export const CourseDetails: React.FC = () => {
       setEnrollSuccessMessage('Successfully enrolled in course! You can now start learning.');
 
       try {
-        const [summary, progressData] = await Promise.all([
+        const [summary, assessData, progressData] = await Promise.all([
           studentProgressApi.getCourseProgressSummary(courseId, accessToken),
+          studentAssessmentApi.getCourseAssessments(courseId, accessToken).catch(() => []),
           studentProgressApi.getCourseProgress(courseId, accessToken),
         ]);
         setProgressSummary(summary);
+        if (assessData) setAssessments(assessData);
         setCompletedTopicIds(new Set(progressData.completedTopicIds || []));
       } catch {
         // Safe fallback
@@ -1003,7 +1006,7 @@ export const CourseDetails: React.FC = () => {
             )}
 
             {/* Context-Aware Primary Action Button */}
-            {isCheckingEnrollment && isStudent ? (
+            {(authLoading || (isCheckingEnrollment && isStudent)) ? (
               <div className="w-full py-3 px-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center space-x-2 text-slate-500 text-xs font-medium" id="checking-enrollment-placeholder">
                 <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
                 <span>Checking enrollment status...</span>
@@ -1039,7 +1042,7 @@ export const CourseDetails: React.FC = () => {
                     {enrollment.status === 'completed' || progressSummary?.isCompleted
                       ? 'Review Completed Course'
                       : progressSummary && progressSummary.completedTopics > 0
-                      ? 'Resume Learning'
+                      ? 'Continue Learning'
                       : 'Start Learning'}
                   </span>
                 </Link>
@@ -1076,11 +1079,11 @@ export const CourseDetails: React.FC = () => {
             ) : !isAuthenticated ? (
               <Link
                 to={`/login?returnUrl=/courses/${course.id}`}
-                className="w-full inline-flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-3 rounded-lg transition-colors shadow-xs"
-                id="signin-to-enroll-cta-button"
+                className="w-full inline-flex items-center justify-center space-x-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-semibold text-sm py-3 rounded-lg transition-colors shadow-xs"
+                id="enroll-course-cta-button"
               >
-                <UserIcon className="w-4 h-4" />
-                <span>Sign In to Enroll</span>
+                <Sparkles className="w-4 h-4" />
+                <span>Enroll in Course</span>
               </Link>
             ) : (
               // Authenticated as Admin or Course Creator
